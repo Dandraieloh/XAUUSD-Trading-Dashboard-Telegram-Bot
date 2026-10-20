@@ -3,13 +3,29 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Private XAUUSD demo-trading control plane
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Account and market overview
+  - name: signals
+    description: SMC signals and scanning
+  - name: trades
+    description: MetaApi positions and trade history
+  - name: alerts
+    description: System and trading alerts
+  - name: credentials
+    description: Encrypted provider credential management
+  - name: engine
+    description: Demo-only monitoring controls
+  - name: telegram
+    description: Telegram bot pairing and status
+  - name: chat
+    description: Natural-language assistant
 paths:
   /healthz:
     get:
@@ -24,6 +40,270 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get the dashboard snapshot
+      responses:
+        "200":
+          description: Current connection, account, signal, and engine summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSnapshot"
+  /signals:
+    get:
+      operationId: listSignals
+      tags: [signals]
+      summary: List recent signals
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        "200":
+          description: Recent signals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Signal"
+  /engine/scan:
+    post:
+      operationId: scanMarket
+      tags: [signals]
+      summary: Run one market scan
+      responses:
+        "200":
+          description: Scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+  /trades:
+    get:
+      operationId: listTrades
+      tags: [trades]
+      summary: List open positions and recent closed trades
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        "200":
+          description: Recent positions and trades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trade"
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List recent alerts
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+      responses:
+        "200":
+          description: Recent alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+  /credentials:
+    get:
+      operationId: listCredentials
+      tags: [credentials]
+      summary: List provider credential metadata without returning secrets
+      responses:
+        "200":
+          description: Saved provider credentials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Credential"
+    post:
+      operationId: createCredential
+      tags: [credentials]
+      summary: Save an encrypted provider credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialInput"
+      responses:
+        "201":
+          description: Saved credential metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+  /credentials/{credentialId}:
+    patch:
+      operationId: updateCredential
+      tags: [credentials]
+      summary: Update a credential label or active status
+      parameters:
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialUpdate"
+      responses:
+        "200":
+          description: Updated credential metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credential"
+        "404":
+          description: Credential not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteCredential
+      tags: [credentials]
+      summary: Delete a provider credential
+      parameters:
+        - name: credentialId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Credential deleted
+        "404":
+          description: Credential not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /credentials/test:
+    post:
+      operationId: testCredential
+      tags: [credentials]
+      summary: Test a saved provider credential
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialTestInput"
+      responses:
+        "200":
+          description: Provider test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialTestResult"
+  /engine:
+    get:
+      operationId: getEngineSettings
+      tags: [engine]
+      summary: Get demo-only engine settings
+      responses:
+        "200":
+          description: Current engine settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngineSettings"
+    put:
+      operationId: updateEngineSettings
+      tags: [engine]
+      summary: Update monitoring and demo-only order settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EngineSettingsUpdate"
+      responses:
+        "200":
+          description: Updated engine settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EngineSettings"
+  /telegram/status:
+    get:
+      operationId: getTelegramStatus
+      tags: [telegram]
+      summary: Get Telegram bot pairing status
+      responses:
+        "200":
+          description: Telegram bot status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelegramStatus"
+  /telegram/pairing:
+    post:
+      operationId: createTelegramPairing
+      tags: [telegram]
+      summary: Create a one-time Telegram pairing link
+      responses:
+        "200":
+          description: Pairing link and expiry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelegramPairing"
+  /chat:
+    post:
+      operationId: sendChatMessage
+      tags: [chat]
+      summary: Send a natural-language question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatMessageInput"
+      responses:
+        "200":
+          description: Assistant response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +313,202 @@ components:
           type: string
       required:
         - status
+    DashboardSnapshot:
+      type: object
+      properties:
+        connectionStatus:
+          type: string
+          enum: [not_configured, connected, disconnected, error]
+        account:
+          oneOf:
+            - $ref: "#/components/schemas/AccountSnapshot"
+            - type: "null"
+        quote:
+          oneOf:
+            - $ref: "#/components/schemas/Quote"
+            - type: "null"
+        engine:
+          $ref: "#/components/schemas/EngineSettings"
+        latestSignal:
+          oneOf:
+            - $ref: "#/components/schemas/Signal"
+            - type: "null"
+        openPositionCount:
+          type: integer
+        todayPnl:
+          type: number
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alert"
+        updatedAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [connectionStatus, account, quote, engine, latestSignal, openPositionCount, todayPnl, alerts, updatedAt]
+    AccountSnapshot:
+      type: object
+      properties:
+        name: { type: ["string", "null"] }
+        server: { type: ["string", "null"] }
+        login: { type: ["string", "null"] }
+        accountType: { type: ["string", "null"] }
+        currency: { type: ["string", "null"] }
+        balance: { type: ["number", "null"] }
+        equity: { type: ["number", "null"] }
+        freeMargin: { type: ["number", "null"] }
+        tradeAllowed: { type: ["boolean", "null"] }
+      required: [name, server, login, accountType, currency, balance, equity, freeMargin, tradeAllowed]
+    Quote:
+      type: object
+      properties:
+        symbol: { type: string }
+        bid: { type: number }
+        ask: { type: number }
+        spread: { type: number }
+        time: { type: string, format: date-time }
+      required: [symbol, bid, ask, spread, time]
+    Signal:
+      type: object
+      properties:
+        id: { type: string }
+        symbol: { type: string }
+        direction: { type: string, enum: [BUY, SELL, HOLD] }
+        status: { type: string, enum: [READY, HOLD, REJECTED, EXECUTED] }
+        timeframe: { type: string }
+        entryPrice: { type: ["number", "null"] }
+        stopLoss: { type: ["number", "null"] }
+        takeProfit: { type: ["number", "null"] }
+        confidence: { type: number }
+        reasons:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, symbol, direction, status, timeframe, entryPrice, stopLoss, takeProfit, confidence, reasons, createdAt]
+    Trade:
+      type: object
+      properties:
+        id: { type: string }
+        ticket: { type: ["string", "null"] }
+        symbol: { type: string }
+        direction: { type: string, enum: [BUY, SELL] }
+        status: { type: string, enum: [OPEN, CLOSED] }
+        volume: { type: number }
+        entryPrice: { type: number }
+        currentPrice: { type: ["number", "null"] }
+        stopLoss: { type: ["number", "null"] }
+        takeProfit: { type: ["number", "null"] }
+        profit: { type: number }
+        openedAt: { type: string, format: date-time }
+        closedAt: { type: ["string", "null"], format: date-time }
+      required: [id, ticket, symbol, direction, status, volume, entryPrice, currentPrice, stopLoss, takeProfit, profit, openedAt, closedAt]
+    Alert:
+      type: object
+      properties:
+        id: { type: string }
+        severity: { type: string, enum: [info, warning, critical] }
+        title: { type: string }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+        read: { type: boolean }
+      required: [id, severity, title, message, createdAt, read]
+    Credential:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        provider: { type: string, enum: [anthropic, metaapi, telegram] }
+        label: { type: string }
+        fingerprint: { type: string }
+        active: { type: boolean }
+        status: { type: string, enum: [untested, connected, failed] }
+        lastTestedAt: { type: ["string", "null"], format: date-time }
+        metaApiAccountId: { type: ["string", "null"] }
+        telegramBotUsername: { type: ["string", "null"] }
+        pairedChatCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+      required: [id, provider, label, fingerprint, active, status, lastTestedAt, metaApiAccountId, telegramBotUsername, pairedChatCount, createdAt]
+    CredentialInput:
+      type: object
+      properties:
+        provider: { type: string, enum: [anthropic, metaapi, telegram] }
+        label: { type: string, minLength: 1, maxLength: 80 }
+        secret: { type: string, minLength: 1, maxLength: 4096 }
+        metaApiAccountId: { type: ["string", "null"], maxLength: 160 }
+        telegramAllowedChatIds:
+          type: ["array", "null"]
+          items: { type: string, maxLength: 80 }
+      required: [provider, label, secret]
+    CredentialUpdate:
+      type: object
+      properties:
+        label: { type: string, minLength: 1, maxLength: 80 }
+        active: { type: boolean }
+    CredentialTestInput:
+      type: object
+      properties:
+        credentialId: { type: string, format: uuid }
+      required: [credentialId]
+    CredentialTestResult:
+      type: object
+      properties:
+        credentialId: { type: string, format: uuid }
+        provider: { type: string, enum: [anthropic, metaapi, telegram] }
+        ok: { type: boolean }
+        message: { type: string }
+        checkedAt: { type: string, format: date-time }
+      required: [credentialId, provider, ok, message, checkedAt]
+    EngineSettings:
+      type: object
+      properties:
+        mode: { type: string, enum: [demo_only] }
+        symbol: { type: string }
+        timeframe: { type: string }
+        monitoringEnabled: { type: boolean }
+        demoAutoTradingEnabled: { type: boolean }
+        riskPerTradePercent: { type: number }
+        dailyLossLimitPercent: { type: number }
+        maxSpreadPrice: { type: number }
+        lastScanAt: { type: ["string", "null"], format: date-time }
+      required: [mode, symbol, timeframe, monitoringEnabled, demoAutoTradingEnabled, riskPerTradePercent, dailyLossLimitPercent, maxSpreadPrice, lastScanAt]
+    EngineSettingsUpdate:
+      type: object
+      properties:
+        monitoringEnabled: { type: boolean }
+        demoAutoTradingEnabled: { type: boolean }
+        riskPerTradePercent: { type: number, minimum: 0.01, maximum: 1 }
+        dailyLossLimitPercent: { type: number, minimum: 0.1, maximum: 5 }
+        maxSpreadPrice: { type: number, minimum: 0.01, maximum: 10 }
+      required: [monitoringEnabled, demoAutoTradingEnabled, riskPerTradePercent, dailyLossLimitPercent, maxSpreadPrice]
+    TelegramStatus:
+      type: object
+      properties:
+        configured: { type: boolean }
+        botUsername: { type: ["string", "null"] }
+        paired: { type: boolean }
+        pairedChatCount: { type: integer }
+        lastUpdateAt: { type: ["string", "null"], format: date-time }
+      required: [configured, botUsername, paired, pairedChatCount, lastUpdateAt]
+    TelegramPairing:
+      type: object
+      properties:
+        botUsername: { type: string }
+        startLink: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }
+      required: [botUsername, startLink, expiresAt]
+    ChatMessageInput:
+      type: object
+      properties:
+        message: { type: string, minLength: 1, maxLength: 2000 }
+      required: [message]
+    ChatMessage:
+      type: object
+      properties:
+        reply: { type: string }
+        providerLabel: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [reply, providerLabel, createdAt]
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
 

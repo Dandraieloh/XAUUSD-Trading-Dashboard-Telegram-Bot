@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "XAUUSD Command Center"
+description = "A private XAUUSD demo-trading dashboard with Smart Money Concepts signals, MetaApi Cloud account connectivity, Telegram alerts and natural-language chat, and a secure settings area for provider credentials."
+version = "1.0.0"
+id = "artifacts/xauusd-command-center"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25135
+
+[services.development]
+run = "pnpm --filter @workspace/xauusd-command-center run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/xauusd-command-center", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/xauusd-command-center/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25135"
+BASE_PATH = "/"
